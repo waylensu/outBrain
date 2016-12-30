@@ -10,16 +10,21 @@ def shell(cmd):
     print("Done! {0}.".format(cmd))
 
 start = time.time()
-'''
-cmd='./ffm2gbdt.py ../FFM2/data/splitTrain.txt data/splitTrainDen.txt data/splitTrainSpr.txt'
+
+cmd = '../converters/parallelizer-1s1d.py -s {nr_thread} ../FFM2/FFMStarter.py ~/DataSet/outBrain/split_trainSample.csv data/splitTrain.ffm'.format(nr_thread=NR_THREAD)
 shell(cmd)
 
-cmd='./ffm2gbdt.py ../FFM2/data/splitTest.txt data/splitTestDen.txt data/splitTestSpr.txt'
+cmd = '../converters/parallelizer-1s1d.py -s {nr_thread} ../FFM2/FFMStarter.py ~/DataSet/outBrain/split_testSample.csv data/splitTest.ffm'.format(nr_thread=NR_THREAD)
+shell(cmd)
+
+cmd='./ffm2gbdt.py data/splitTrain.ffm data/splitTrainDen.txt data/splitTrainSpr.txt'
+shell(cmd)
+
+cmd='./ffm2gbdt.py data/splitTest.ffm data/splitTestDen.txt data/splitTestSpr.txt'
 shell(cmd)
 
 cmd='./gbdt  -t 30 -s {nr_thread} data/splitTestDen.txt data/splitTestSpr.txt data/splitTrainDen.txt data/splitTrainSpr.txt data/splitTestOut.txt data/splitTrainOut.txt'.format(nr_thread=NR_THREAD)
 shell(cmd)
-'''
 
 cmd='./connect.py ../FFM2/data/splitTrain.txt data/splitTrainOut.txt data/connTrain.ffm'
 shell(cmd)

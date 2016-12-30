@@ -1,2 +1,7 @@
 data*
 *tmp*
+*.log
+*.o
+*.out
+*.ffm
+*.txt
