@@ -4,12 +4,13 @@ from __future__ import (division,absolute_import,print_function,unicode_literals
 import argparse, csv, sys,subprocess
 from common import *
 
-def ensamble(train,predict,score,folds,nr_thread):
+def ensamble(train,predict,trainOut,predictOut,folds,nr_thread):
     stackSplit(train,folds)
-    cat(train,folds)
-    parallel(train,predict,folds,nr_thread)
-    average(predict,score,folds)
-    delete(train,predict,folds)
+    cat(folds)
+    parallel(predict,folds,nr_thread)
+    catTrainOut(train,trainOut)
+    average(predictOut,folds)
+    #delete(train,predict,folds)
 
 
 
@@ -19,9 +20,9 @@ def main():
     parser.add_argument('-f', dest='folds', default=5, type=int) 
     parser.add_argument('train', type=str)
     parser.add_argument('predict', type=str)
-    parser.add_argument('score', type=str)
+    parser.add_argument('trainOut', type=str)
+    parser.add_argument('predictOut', type=str)
     args = vars(parser.parse_args())
-    ensamble(args['train'],args['predict'],args['score'],args['folds'],args['nr_thread'])
-
+    ensamble(args['train'],args['predict'],args['trainOut'],args['predictOout'],args['folds'],args['nr_thread'])
 
 main()

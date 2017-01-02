@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
-#coding=utf8
-from __future__ import (division,absolute_import,print_function,unicode_literals)
-import argparse, csv, sys
-
+#-*- coding: utf-8 -*-
+"""
+Thanks to tinrtgu for the wonderful base script
+Use pypy for faster computations.!
+"""
 import csv
 from datetime import datetime
 from csv import DictReader
@@ -197,10 +197,27 @@ def ffm2x(string):
     wTable[int(tmp[1])][1]=int(tmp[0])
     return int(tmp[1]),float(tmp[2])
 
-def data(path):
+def data(path,train=False):
+    ''' GENERATOR: Apply hash-trick to the original csv row
+                   and for simplicity, we one-hot-encode everything
+
+        INPUT:
+            path: path to training or testing file
+            D: the max index that we can hash to
+
+        YIELDS:
+            ID: id of the instance, mainly useless
+            x: a list of hashed and one-hot-encoded 'indices'
+               we only need the index since all values are either 0 or 1
+            y: y = 1 if we have a click, else we have y = 0
+    '''
+
     for t, row in enumerate(open(path)):
         col=row.strip().split(' ')
         y=int(col[0])
+        if y==0 and train:
+            if random.random()>0.193649667154:
+                continue
         x=map(ffm2x,col[1:])
             
         yield t, x, y
@@ -210,48 +227,78 @@ def data(path):
 # start training #############################################################
 ##############################################################################
 
-#start = datetime.now()
+start = datetime.now()
 
-def FTRL(train,test,testOut,predict,predictOut):
-    learner = ftrl_proximal(alpha, beta, L1, L2, D, interaction)
-    for e in range(epoch):
-        loss = 0.
-        count = 0
-        date = 0
-        for t, x, y in data(train):  # data is a generator
-            p = learner.predict(x)
+# initialize ourselves a learner
+learner = ftrl_proximal(alpha, beta, L1, L2, D, interaction)
 
-            if (holdafter and date > holdafter) or (holdout and t % holdout == 0):
-                loss += logloss(p, y)
-                count += 1
-            else:
-                learner.update(x, p, y)
 
-            if t%1000000 == 0:
-                print("Processed : ", t, datetime.now())
+# start training
+for e in range(epoch):
+    loss = 0.
+    count = 0
+    date = 0
 
-    with open(testOut, 'w') as outfile:
-        for t, x, y in data(test):
-            p = learner.predict(x)
-            outfile.write('%s\n' % (str(p)))
-            if t%1000000 == 0:
-                print("Processed : ", t, datetime.now())
+    for t, x, y in data(train,True):  # data is a generator
+        #    t: just a instance counter
+        # date: you know what this is
+        #   ID: id provided in original data
+        #    x: features
+        #    y: label (click)
 
-    with open(predictOut, 'w') as outfile:
-        for t, x, y in data(predict):
-            p = learner.predict(x)
-            outfile.write('%s\n' % (str(p)))
-            if t%1000000 == 0:
-                print("Processed : ", t, datetime.now())
+        # step 1, get prediction from learner
+        p = learner.predict(x)
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('train', type=str)
-    parser.add_argument('test', type=str)
-    parser.add_argument('testOut', type=str)
-    parser.add_argument('predict', type=str)
-    parser.add_argument('predictOut', type=str)
-    args = vars(parser.parse_args())
-    FTRL(args['train'],args['test'],args['testOut'],args['predict'],args['predictOut'])
+        if (holdafter and date > holdafter) or (holdout and t % holdout == 0):
+            # step 2-1, calculate validation loss
+            #           we do not train with the validation data so that our
+            #           validation loss is an accurate estimation
+            #
+            # holdafter: train instances from day 1 to day N
+            #            validate with instances from day N + 1 and after
+            #
+            # holdout: validate with every N instance, train with others
+            loss += logloss(p, y)
+            count += 1
+        else:
+            # step 2-2, update learner with label (click) information
+            learner.update(x, p, y)
 
-main()
+        if t%1000000 == 0:
+            print("Processed : ", t, datetime.now())
+
+
+z=learner.z
+n=learner.n
+w={}
+for i in range(D):
+    sign = -1. if z[i] < 0 else 1.  # get sign of z[i]
+    if sign * z[i] <= L1:
+        w[i] = 0.
+    else:
+        w[i] = (sign * L1 - z[i]) / ((beta + sqrt(n[i])) / alpha + L2)
+
+wPath="sortedAbsW.txt"
+for k,v in w.iteritems():
+    wTable[k][0]=abs(v)
+with open(wPath,'w') as outFile:
+    for line in sorted(wTable,reverse=True):
+        outFile.write('%s\t%s\t%s\n'%(line[1],line[2],line[0]))
+       
+
+wPath="sortedW.txt"
+for k,v in w.iteritems():
+    wTable[k][0]=v
+with open(wPath,'w') as outFile:
+    for line in sorted(wTable,reverse=True):
+        outFile.write('%s\t%s\t%s\n'%(line[1],line[2],line[0]))
+##############################################################################
+# start testing, and build Kaggle's submission file ##########################
+##############################################################################
+with open(outputFile, 'w') as outfile:
+    #outfile.write('display_id,ad_id,clicked\n')
+    for t, x, y in data(test):
+        p = learner.predict(x)
+        outfile.write('%s\n' % (str(p)))
+        if t%1000000 == 0:
+            print("Processed : ", t, datetime.now())

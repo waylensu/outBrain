@@ -43,11 +43,11 @@ class OneHotEncoder(object):
         if not string in self.featTable:
             if self.add:
                 self.featTable[string]=len(self.featTable)
-                self.featCount[string]=1
+                self.featCount[self.featTable[string]]=1
             else:
                 return field,-1,level
         else:
-            self.featCount[string]+=1
+            self.featCount[self.featTable[string]]+=1
         featInd=self.featTable[string]
         return field,featInd,level
 
@@ -110,6 +110,8 @@ def data(path,oneHot):
                     if ind>=len(doc_header)-3:
                         for k,v in val.items():
                             x.append(oneHot.encode(field,k,v))
+                    elif ind==2:
+                        x.append(oneHot.encode(field,0,val))
                     else:
                         x.append(oneHot.encode(field,val))
                     field+=1
@@ -119,7 +121,7 @@ def data(path,oneHot):
         if withDocOverlap:
             ad_row = doc_dict.get(ad_doc_id, [])
             disp_row = doc_dict.get(disp_doc_id, [])
-            for ind in range(2,5):
+            for ind in range(len(doc_header)-3,len(doc_header)):
                 level=0
                 for col in ad_row[ind]:
                     if col in disp_row[ind]:
@@ -183,15 +185,25 @@ del events
 
 if withDoc or withDocOverlap:
     logging.info("Documents meta file..")
+    sigma=math.log(2)/(2*365*24*60*60)
     doc_dict={}
     with open(data_path+"documents_meta.csv") as infile:
         docs=csv.reader(infile)
         next(docs)
-        #doc_header=['source_id','publisher_id','pub_time','doc_categories','doc_topics','doc_entities']
-        doc_header=['source_id','publisher_id','doc_categories','doc_topics','doc_entities']
+        doc_header=['source_id','publisher_id','pub_time','doc_categories','doc_topics','doc_entities']
+        #doc_header=['source_id','publisher_id','doc_categories','doc_topics','doc_entities']
         for ind,row in enumerate(docs):
             doc_id=int(row[0])
             tlist=row[1:3]
+            if row[3] == '':                                                       
+                tlist+=[0.]
+            else:
+                timeArray=time.strptime(row[3], "%Y-%m-%d %H:%M:%S")
+                if timeArray.tm_year>=2017 or timeArray.tm_year<1940:
+                    tlist+=[0.]
+                else:
+                    timeStamp=int(time.mktime(timeArray))
+                    tlist+=[math.exp(-sigma*timeStamp)]
             tlist.extend([{},{},{}])
             doc_dict[doc_id]=tlist[:]
     del docs
@@ -263,12 +275,11 @@ def main():
 
 #main()
 countPath='count.csv'
-src=['../data/split_train.csv','../data/split_test.csv','../../input/clicks_test.csv']
-des=['../data/split_train.ffm','../data/split_test.ffm','../data/clicks_test.ffm']
+src=['../data/split_train.csv','../data/split_test.csv','../../input/click_test.csv']
+des=['../dataWithTime2/split_train.ffm','../dataWithTime2/split_test.ffm','../dataWithTime2/click_test.ffm']
 for s,d in zip(src,des):
     data2ffm(s,d)
 
-exit()
 with open(countPath,'w') as infile:
     for k,v in oneHot.featCount.items():
         infile.write('{0},{1}\n'.format(k,v))
