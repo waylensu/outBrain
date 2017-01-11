@@ -5,3 +5,7 @@ data*
 *.out
 *.ffm
 *.txt
+*.pyc
+*.csv
+corFTRL
+ffmData
