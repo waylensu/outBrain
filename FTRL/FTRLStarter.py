@@ -18,34 +18,22 @@ import random
 # parameters #################################################################
 ##############################################################################
 
-# A, paths
-data_path = "../FFM/data10per/"
-#train = data_path+'splitTrain.txt'               # path to training file
-train = data_path+'splitTrain.txt'               # path to training file
-test = data_path+'splitTest.txt'                 # path to testing file
-outputFile='output.txt'
-
 # B, model
 alpha = .1  # learning rate
-beta = 0.   # smoothing parameter for adaptive learning rate
-L1 = 0.2    # L1 regularization, larger value means more regularized
-L2 = 0.2     # L2 regularization, larger value means more regularized
+beta = 0.1   # smoothing parameter for adaptive learning rate
+L1 = 0.1    # L1 regularization, larger value means more regularized
+L2 = 0.1     # L2 regularization, larger value means more regularized
 
 # C, feature/hash trick
-D = 2 ** 25             # number of weights to use
+D = 2 ** 21             # number of weights to use
 interaction = False     # whether to enable poly2 feature interactions
 
 # D, training/validation
 epoch = 1       # learn training data for N passes
-holdafter = None   # data after date N (exclusive) are used as validation
-holdout = None  # use every N training instance for holdout validation
-
 wTable=[]
 for i in range(D):
     wTable.append([-1,-1,i])
-##############################################################################
-# class, function, generator definitions #####################################
-##############################################################################
+
 
 class ftrl_proximal(object):
     ''' Our main algorithm: Follow the regularized leader - proximal
@@ -85,22 +73,14 @@ class ftrl_proximal(object):
         '''
 
         # first yield index of the bias term
-        yield (0,1.0)
+        yield (D-1,1.0)
 
         # then yield the normal indices
         for index in x:
+            #yield index[0]+1,index[1]
             yield index
 
         # now yield interactions (if applicable)
-        #if self.interaction:
-        #    D = self.D
-        #    L = len(x)
-
-        #    x = sorted(x)
-        #    for i in xrange(L):
-        #        for j in xrange(i+1, L):
-        #            # one-hot encode interactions with hash trick
-        #            yield abs(hash(str(x[i]) + '_' + str(x[j]))) % D
 
     def predict(self, x):
         ''' Get probability estimation on x
@@ -179,16 +159,6 @@ class ftrl_proximal(object):
 
 
 def logloss(p, y):
-    ''' FUNCTION: Bounded logloss
-
-        INPUT:
-            p: our prediction
-            y: real answer
-
-        OUTPUT:
-            logarithmic loss of p given y
-    '''
-
     p = max(min(p, 1. - 10e-15), 10e-15)
     return -log(p) if y == 1. else -log(1. - p)
 
@@ -199,9 +169,11 @@ def ffm2x(string):
 
 def data(path):
     for t, row in enumerate(open(path)):
-        col=row.strip().split(' ')
-        y=int(col[0])
-        x=map(ffm2x,col[1:])
+        cols=row.strip().split(' ')
+        y=int(cols[0])
+        x=[]
+        for col in cols[1:]:
+           x.append(ffm2x(col))
             
         yield t, x, y
 
@@ -215,19 +187,15 @@ def data(path):
 def FTRL(train,test,testOut,predict,predictOut):
     learner = ftrl_proximal(alpha, beta, L1, L2, D, interaction)
     for e in range(epoch):
-        loss = 0.
-        count = 0
-        date = 0
+        #loss = 0.
+        #count = 0
+        #date = 0
         for t, x, y in data(train):  # data is a generator
             p = learner.predict(x)
+            learner.update(x, p, y)
 
-            if (holdafter and date > holdafter) or (holdout and t % holdout == 0):
-                loss += logloss(p, y)
-                count += 1
-            else:
-                learner.update(x, p, y)
-
-            if t%1000000 == 0:
+            #if t%1000000 == 0:
+            if t%100000 == 0:
                 print("Processed : ", t, datetime.now())
 
     with open(testOut, 'w') as outfile:
@@ -243,6 +211,23 @@ def FTRL(train,test,testOut,predict,predictOut):
             outfile.write('%s\n' % (str(p)))
             if t%1000000 == 0:
                 print("Processed : ", t, datetime.now())
+
+    z=learner.z
+    n=learner.n
+    w={}
+    for i in range(D):
+        sign = -1. if z[i] < 0 else 1.  # get sign of z[i]
+        if sign * z[i] <= L1:
+            w[i] = 0.
+        else:
+            w[i] = (sign * L1 - z[i]) / ((beta + sqrt(n[i])) / alpha + L2)
+
+    wPath="FTRL/W.txt"
+    for k,v in w.items():
+        wTable[k][0]=v
+    with open(wPath,'w') as outFile:
+        for line in wTable:
+            outFile.write('%s\t%s\t%s\n'%(line[1],line[2],line[0]))
 
 def main():
     parser = argparse.ArgumentParser()

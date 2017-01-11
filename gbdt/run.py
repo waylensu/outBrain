@@ -11,31 +11,23 @@ def shell(cmd):
 
 start = time.time()
 
-cmd = '../converters/parallelizer-1s1d.py -s {nr_thread} ../FFM2/FFMStarter.py ~/DataSet/outBrain/split_trainSample.csv data/splitTrain.ffm'.format(nr_thread=NR_THREAD)
+
+cmd='mkdir gbdt/tmp -p'
 shell(cmd)
 
-cmd = '../converters/parallelizer-1s1d.py -s {nr_thread} ../FFM2/FFMStarter.py ~/DataSet/outBrain/split_testSample.csv data/splitTest.ffm'.format(nr_thread=NR_THREAD)
+cmd='gbdt/ffm2gbdt.py ffmData/Filter100/click_train.ffm gbdt/tmp/clickTrainDen.txt gbdt/tmp/clickTrainSpr.txt'
 shell(cmd)
 
-cmd='./ffm2gbdt.py data/splitTrain.ffm data/splitTrainDen.txt data/splitTrainSpr.txt'
+cmd='gbdt/ffm2gbdt.py ffmData/Filter100/click_test.ffm gbdt/tmp/clickTestDen.txt gbdt/tmp/clickTestSpr.txt'
 shell(cmd)
 
-cmd='./ffm2gbdt.py data/splitTest.ffm data/splitTestDen.txt data/splitTestSpr.txt'
+cmd='gbdt/gbdt  -t 30 -s {nr_thread} gbdt/tmp/clickTestDen.txt gbdt/tmp/clickTestSpr.txt gbdt/tmp/clickTrainDen.txt gbdt/tmp/clickTrainSpr.txt gbdt/tmp/clickTestOut.txt gbdt/tmp/clickTrainOut.txt'.format(nr_thread=NR_THREAD)
 shell(cmd)
 
-cmd='./gbdt  -t 30 -s {nr_thread} data/splitTestDen.txt data/splitTestSpr.txt data/splitTrainDen.txt data/splitTrainSpr.txt data/splitTestOut.txt data/splitTrainOut.txt'.format(nr_thread=NR_THREAD)
+cmd='gbdt/connect.py ffmData/Filter100/click_train.ffm gbdt/tmp/clickTrainOut.txt gbdt/tmp/connTrain.ffm'
 shell(cmd)
 
-cmd='./connect.py ../FFM2/data/splitTrain.txt data/splitTrainOut.txt data/connTrain.ffm'
-shell(cmd)
-
-cmd='./connect.py ../FFM2/data/splitTest.txt data/splitTestOut.txt data/connTest.ffm'
-shell(cmd)
-
-cmd='../libffm/ffm-transform -k 8 -s {nr_thread} -p data/connTest.ffm --auto-stop -i1 data/connTest.ffm -o1 data/connTestOut data/connTrain.ffm > ffm.log'.format(nr_thread=NR_THREAD)
-shell(cmd)
-
-cmd='../FFM/map.py data/connTestOut /home/wing/DataSet/outBrain/split_testSample.csv'
+cmd='gbdt/connect.py ffmData/Filter100/click_test.ffm gbdt/tmp/clickTestOut.txt gbdt/tmp/connTest.ffm'
 shell(cmd)
 
 print('time used = {0:.0f}'.format(time.time()-start))

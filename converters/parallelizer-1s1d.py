@@ -24,7 +24,7 @@ def main():
 
     nr_thread = args['nr_thread']
     
-    split(args['src_path'], nr_thread, True,True)
+    split(args['src_path'], nr_thread, False,False)
 
     parallel_convert(args['cvt_path'], [ args['src_path'], args['dst_path'] ], nr_thread)
 

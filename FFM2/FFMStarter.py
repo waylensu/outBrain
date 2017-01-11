@@ -226,7 +226,7 @@ if withDoc or withDocOverlap:
 logging.info("Leakage file..")
 leak_uuid_dict= {}
 #"""
-with open(data_path+"leak_uuid_doc.csv") as infile:
+with open(data_path+"leak.csv") as infile:
 	doc = csv.reader(infile)
 	next(doc)
 	leak_uuid_dict = {}

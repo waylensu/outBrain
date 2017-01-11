@@ -1,3 +1,4 @@
+#/usr/bin/env python3
 #-*- coding: utf-8 -*-
 """
 Thanks to tinrtgu for the wonderful base script

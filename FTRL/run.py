@@ -10,9 +10,23 @@ def shell(cmd):
 
 start=time.time()
 
-cmd = 'mkdir tmp'
+inPath='ffmData/filter20userGbdt/'
+outPath='FTRL/data/'
 
-cmd = 'ensamble/ensamble.py -s {nr_thread} -f 5 ../dataWihtTime/clicks_train.ffm  ../dataWihtTime/clicks_test.ffm data/clicks_train_out.txt data/clicks_test_out.txt '.format(nr_thread=NR_THREAD)
+cmd = 'mkdir FTRL/tmp -p'
 shell(cmd)
 
+cmd = 'mkdir FTRL/data -p'
+shell(cmd)
+
+
+cmd = 'FTRL/FTRLStarter.py {inPath}split_train.ffm {inPath}split_test.ffm {outPath}split_test.out {inPath}click_test.ffm {outPath}click_test.out'.format(inPath=inPath,outPath=outPath)
+shell(cmd)
+
+'''
+cmd='util/meanAveP.py {outPath}split_test.out  data/split_test.csv'.format(outPath=outPath)
+shell(cmd)
+'''
+
 print('time used = {0:.0f}'.format(time.time()-start))
+

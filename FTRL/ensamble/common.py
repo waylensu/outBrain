@@ -4,8 +4,8 @@ from __future__ import (division,absolute_import,print_function,unicode_literals
 import argparse, csv, sys
 import subprocess
 
-tmpTrainPath='tmp/train'
-tmpPredictPath='tmp/train'
+tmpTrainPath='FTRL/tmp/train'
+tmpPredictPath='FTRL/tmp/train'
 
 def stackSplit(train,folds):
     outs=[]
@@ -49,7 +49,7 @@ def parallel(predict,folds,nr_thread):
         testPath='{0}.__test__.{1}'.format(tmpTrainPath,fold)
         predictPath='{0}.__predict__.{1}.out'.format(tmpPredictPath,fold)
 
-        cmd="./FTRLStarter.py {train} {test} {testOut} {predict} {predictOut}".format(test=testPath, testOut=testPath+'.out' , predict=predict, predictOut=predictPath,train=trainPath ,nr_thread=nr_thread)
+        cmd="FTRL/FTRLStarter.py {train} {test} {testOut} {predict} {predictOut}".format(test=testPath, testOut=testPath+'.out' , predict=predict, predictOut=predictPath,train=trainPath ,nr_thread=nr_thread)
         print (cmd)
         worker = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         workers.append(worker)

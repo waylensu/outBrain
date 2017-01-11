@@ -10,7 +10,7 @@ def ensamble(train,predict,trainOut,predictOut,folds,nr_thread):
     parallel(predict,folds,nr_thread)
     catTrainOut(train,trainOut)
     average(predictOut,folds)
-    #delete(train,predict,folds)
+    delete(train,predict,folds)
 
 
 
@@ -23,6 +23,6 @@ def main():
     parser.add_argument('trainOut', type=str)
     parser.add_argument('predictOut', type=str)
     args = vars(parser.parse_args())
-    ensamble(args['train'],args['predict'],args['trainOut'],args['predictOout'],args['folds'],args['nr_thread'])
+    ensamble(args['train'],args['predict'],args['trainOut'],args['predictOut'],args['folds'],args['nr_thread'])
 
 main()

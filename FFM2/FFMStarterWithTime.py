@@ -24,7 +24,7 @@ csv.field_size_limit(sys.maxsize)
 ##############################################################################
 withDoc=True
 withDocOverlap=True
-D=2**25
+#D=2**25
 data_path="/home/wing/DataSet/outBrain/"
 
 #class OneHotEncoder(object):
@@ -78,7 +78,7 @@ def data(path,oneHot):
                 ad_doc_id = int(val)
             x.append(oneHot.encode(field,val))
             field+=1
-        fieldCount+=len(row)
+        fieldCount+=len(prcont_header)
         field=fieldCount
 
         row = event_dict.get(disp_id, [])
@@ -126,8 +126,8 @@ def data(path,oneHot):
                 for col in ad_row[ind]:
                     if col in disp_row[ind]:
                         level+=math.sqrt(float(ad_row[ind][col])*float(disp_row[ind][col]))
-                if level>1:
-                    level=1
+                #if level>1:
+                    #level=1
                 x.append(oneHot.encode(field,0,level))
                 field+=1
             fieldCount+=3
@@ -185,6 +185,7 @@ del events
 
 if withDoc or withDocOverlap:
     logging.info("Documents meta file..")
+    endTimeStamp=time.mktime(time.strptime('2016-12-31 23:59:59',"%Y-%m-%d %H:%M:%S"))
     sigma=math.log(2)/(2*365*24*60*60)
     doc_dict={}
     with open(data_path+"documents_meta.csv") as infile:
@@ -203,7 +204,7 @@ if withDoc or withDocOverlap:
                     tlist+=[0.]
                 else:
                     timeStamp=int(time.mktime(timeArray))
-                    tlist+=[math.exp(-sigma*timeStamp)]
+                    tlist+=[math.exp(-(endTimeStamp-timeStamp)*sigma)]
             tlist.extend([{},{},{}])
             doc_dict[doc_id]=tlist[:]
     del docs
@@ -238,7 +239,7 @@ if withDoc or withDocOverlap:
 logging.info("Leakage file..")
 leak_uuid_dict= {}
 #"""
-with open(data_path+"leak_uuid_doc.csv") as infile:
+with open(data_path+"leak.csv") as infile:
 	doc = csv.reader(infile)
 	next(doc)
 	leak_uuid_dict = {}
@@ -253,9 +254,9 @@ del doc
 oneHot=OneHotEncoder()
 
 def data2ffm(src,des):
-#for src,des in zip(srcFile,desFile):
     with open(des,'w') as outfile:
         for field,t,disp_id,ad_id,x,y in data(src,oneHot):
+            pass
             line=str(int(y))+' '
             length=field
             for feat in x:
@@ -274,9 +275,9 @@ def main():
     data2ffm(args['src'],args['des'])
 
 #main()
-countPath='count.csv'
-src=['../data/split_train.csv','../data/split_test.csv','../../input/click_test.csv']
-des=['../dataWithTime2/split_train.ffm','../dataWithTime2/split_test.ffm','../dataWithTime2/click_test.ffm']
+countPath='FFM2/count.csv'
+src=['data/split_train.csv','data/split_test.csv','data/click_test.csv']
+des=['dataWithTime/split_train.ffm','dataWithTime/split_test.ffm','dataWithTime/click_test.ffm']
 for s,d in zip(src,des):
     data2ffm(s,d)
 
